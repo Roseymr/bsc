@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/ethereum/go-ethereum/ethdb/pebble"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -425,6 +426,16 @@ func NewLevelDBDatabaseWithFreezer(file string, cache int, handles int, ancient 
 	return frdb, nil
 }
 
+// NewPebbleDBDatabase creates a persistent key-value database without a freezer
+// moving immutable chain segments into cold storage.
+func NewPebbleDBDatabase(file string, cache int, handles int, namespace string, readonly bool) (ethdb.Database, error) {
+	db, err := pebble.New(file, cache, handles, namespace, readonly)
+	if err != nil {
+		return nil, err
+	}
+	return NewDatabase(db), nil
+}
+
 const (
 	dbPebble  = "pebble"
 	dbLeveldb = "leveldb"
@@ -480,12 +491,8 @@ func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 		return nil, fmt.Errorf("db.engine choice was %v but found pre-existing %v database in specified data directory", o.Type, existingDb)
 	}
 	if o.Type == dbPebble || existingDb == dbPebble {
-		if PebbleEnabled {
-			log.Info("Using pebble as the backing database")
-			return NewPebbleDBDatabase(o.Directory, o.Cache, o.Handles, o.Namespace, o.ReadOnly)
-		} else {
-			return nil, errors.New("db.engine 'pebble' not supported on this platform")
-		}
+		log.Info("Using pebble as the backing database")
+		return NewPebbleDBDatabase(o.Directory, o.Cache, o.Handles, o.Namespace, o.ReadOnly)
 	}
 	if o.Type == dbLeveldb || existingDb == dbLeveldb {
 		log.Info("Using leveldb as the backing database")
@@ -493,10 +500,8 @@ func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 	}
 	// No pre-existing database, no user-requested one either. Default to Pebble
 	// on supported platforms and LevelDB on anything else.
-	// if PebbleEnabled {
 	// 	log.Info("Defaulting to pebble as the backing database")
 	// 	return NewPebbleDBDatabase(o.Directory, o.Cache, o.Handles, o.Namespace, o.ReadOnly)
-	// }
 	log.Info("Defaulting to leveldb as the backing database")
 	return NewLevelDBDatabase(o.Directory, o.Cache, o.Handles, o.Namespace, o.ReadOnly)
 }
@@ -581,6 +586,28 @@ func AncientInspect(db ethdb.Database) error {
 	return nil
 }
 
+func PruneHashTrieNodeInDataBase(db ethdb.Database) error {
+	it := db.NewIterator([]byte{}, []byte{})
+	defer it.Release()
+
+	total_num := 0
+	for it.Next() {
+		var key = it.Key()
+		switch {
+		case IsLegacyTrieNode(key, it.Value()):
+			db.Delete(key)
+			total_num++
+			if total_num%100000 == 0 {
+				log.Info("Pruning hash-base state trie nodes", "Complete progress: ", total_num)
+			}
+		default:
+			continue
+		}
+	}
+	log.Info("Pruning hash-base state trie nodes", "Complete progress", total_num)
+	return nil
+}
+
 // InspectDatabase traverses the entire database and checks the size
 // of all different categories of data.
 func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
@@ -599,7 +626,10 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 		tds             stat
 		numHashPairings stat
 		hashNumPairings stat
-		tries           stat
+		legacyTries     stat
+		stateLookups    stat
+		accountTries    stat
+		storageTries    stat
 		codes           stat
 		txLookups       stat
 		accountSnaps    stat
@@ -640,8 +670,14 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 			numHashPairings.Add(size)
 		case bytes.HasPrefix(key, headerNumberPrefix) && len(key) == (len(headerNumberPrefix)+common.HashLength):
 			hashNumPairings.Add(size)
-		case len(key) == common.HashLength:
-			tries.Add(size)
+		case IsLegacyTrieNode(key, it.Value()):
+			legacyTries.Add(size)
+		case bytes.HasPrefix(key, stateIDPrefix) && len(key) == len(stateIDPrefix)+common.HashLength:
+			stateLookups.Add(size)
+		case IsAccountTrieNode(key):
+			accountTries.Add(size)
+		case IsStorageTrieNode(key):
+			storageTries.Add(size)
 		case bytes.HasPrefix(key, CodePrefix) && len(key) == len(CodePrefix)+common.HashLength:
 			codes.Add(size)
 		case bytes.HasPrefix(key, txLookupPrefix) && len(key) == (len(txLookupPrefix)+common.HashLength):
@@ -678,7 +714,8 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 				databaseVersionKey, headHeaderKey, headBlockKey, headFastBlockKey,
 				lastPivotKey, fastTrieProgressKey, snapshotDisabledKey, SnapshotRootKey, snapshotJournalKey,
 				snapshotGeneratorKey, snapshotRecoveryKey, txIndexTailKey, fastTxLookupLimitKey,
-				uncleanShutdownKey, badBlockKey, transitionStatusKey,
+				uncleanShutdownKey, badBlockKey, transitionStatusKey, skeletonSyncStatusKey,
+				persistentStateIDKey, trieJournalKey, snapshotSyncStatusKey,
 			} {
 				if bytes.Equal(key, meta) {
 					metadata.Add(size)
@@ -707,7 +744,10 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 		{"Key-Value store", "Transaction index", txLookups.Size(), txLookups.Count()},
 		{"Key-Value store", "Bloombit index", bloomBits.Size(), bloomBits.Count()},
 		{"Key-Value store", "Contract codes", codes.Size(), codes.Count()},
-		{"Key-Value store", "Trie nodes", tries.Size(), tries.Count()},
+		{"Key-Value store", "Hash trie nodes", legacyTries.Size(), legacyTries.Count()},
+		{"Key-Value store", "Path trie state lookups", stateLookups.Size(), stateLookups.Count()},
+		{"Key-Value store", "Path trie account nodes", accountTries.Size(), accountTries.Count()},
+		{"Key-Value store", "Path trie storage nodes", storageTries.Size(), storageTries.Count()},
 		{"Key-Value store", "Trie preimages", preimages.Size(), preimages.Count()},
 		{"Key-Value store", "Account snapshot", accountSnaps.Size(), accountSnaps.Count()},
 		{"Key-Value store", "Storage snapshot", storageSnaps.Size(), storageSnaps.Count()},
