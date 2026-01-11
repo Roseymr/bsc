@@ -16,11 +16,11 @@ require (
 	github.com/cockroachdb/errors v1.9.1
 	github.com/cockroachdb/pebble v0.0.0-20230928194634-aa077af62593
 	github.com/cometbft/cometbft v0.37.0
-	github.com/consensys/gnark-crypto v0.10.0
+	github.com/consensys/gnark-crypto v0.12.1
 	github.com/crate-crypto/go-kzg-4844 v0.3.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set/v2 v2.1.0
-	github.com/docker/docker v20.10.24+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/dop251/goja v0.0.0-20230806174421-c933cf95e127
 	github.com/ethereum/c-kzg-4844 v0.3.1
 	github.com/fatih/color v1.13.0
@@ -79,12 +79,12 @@ require (
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.3
 	github.com/willf/bitset v1.1.3
 	go.uber.org/automaxprocs v1.5.2
-	golang.org/x/crypto v0.12.0
+	golang.org/x/crypto v0.21.0
 	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad
 	golang.org/x/sync v0.3.0
-	golang.org/x/sys v0.11.0
-	golang.org/x/text v0.12.0
-	golang.org/x/time v0.3.0
+	golang.org/x/sys v0.18.0
+	golang.org/x/text v0.14.0
+	golang.org/x/time v0.5.0
 	golang.org/x/tools v0.9.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -136,7 +136,7 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
@@ -213,7 +213,7 @@ require (
 	github.com/multiformats/go-multistream v0.4.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
-	github.com/onsi/ginkgo/v2 v2.9.2 // indirect
+	github.com/onsi/ginkgo/v2 v2.9.5 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
@@ -232,9 +232,7 @@ require (
 	github.com/prysmaticlabs/prombbolt v0.0.0-20210126082820-9b7adba6db7c // indirect
 	github.com/prysmaticlabs/prysm v0.0.0-20220124113610-e26cde5e091b // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.3.3 // indirect
-	github.com/quic-go/qtls-go1-20 v0.2.3 // indirect
-	github.com/quic-go/quic-go v0.33.0 // indirect
+	github.com/quic-go/quic-go v0.42.0 // indirect
 	github.com/quic-go/webtransport-go v0.5.2 // indirect
 	github.com/r3labs/sse/v2 v2.10.0 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
@@ -265,17 +263,18 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect
 	go.uber.org/fx v1.19.2 // indirect
+	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.5.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	google.golang.org/api v0.44.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
-	google.golang.org/grpc v1.53.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/grpc v1.56.3 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
